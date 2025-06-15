@@ -1,0 +1,78 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Happy Birthday Eviaia</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      background: linear-gradient(to right, #d9a7c7, #fffcdc);
+      font-family: 'Arial', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      overflow: hidden;
+      text-align: center;
+    }
+    h1 {
+      margin-top: 2rem;
+      font-size: 2.5rem;
+      color: white;
+      text-shadow: 2px 2px 4px #000;
+      padding: 0 1rem;
+    }
+    .message {
+      font-size: 1.2rem;
+      color: white;
+      margin-bottom: 2rem;
+      padding: 0 1rem;
+    }
+    .animation {
+      width: 180px;
+      height: 180px;
+    }
+    .mario {
+      position: absolute;
+      top: 10%;
+      width: 120px;
+    }
+    .mario.left {
+      left: 10%;
+      transform: rotate(-10deg);
+    }
+    .mario.right {
+      right: 10%;
+      transform: rotate(10deg);
+    }
+  </style>
+</head>
+<body>
+  <audio autoplay loop>
+    <source src="https://cdn.pixabay.com/download/audio/2022/03/02/audio_476abffc30.mp3?filename=birthday-6437.mp3" type="audio/mpeg">
+    Your browser does not support the audio element.
+  </audio>
+
+  <img src="https://upload.wikimedia.org/wikipedia/en/e/e2/Tanooki_Mario.png" class="mario left" alt="Flying Mario Left" />
+  <h1>Happy Birthday Eviaia!<br/>Congrats on another amazing year! 🎉</h1>
+  <lottie-player class="animation" src="https://assets6.lottiefiles.com/packages/lf20_s9lvn9rc.json" background="transparent" speed="1" loop autoplay></lottie-player>
+  <img src="https://upload.wikimedia.org/wikipedia/en/e/e2/Tanooki_Mario.png" class="mario right" alt="Flying Mario Right" />
+  <div class="message">🔮 More fun coming soon in your future...</div>
+
+  <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.4.0/dist/confetti.browser.min.js"></script>
+  <script>
+    setInterval(() => {
+      confetti({
+        particleCount: 70,
+        spread: 90,
+        origin: { y: 0.6 }
+      });
+    }, 1500);
+  </script>
+</body>
+</html>
