@@ -90,6 +90,25 @@
       width: 100px;
     }
 
+  .play-btn {
+  display: inline-block;
+  margin: 1.4rem auto 0;
+  padding: 0.7em 1.4em;
+  font-family: 'Luckiest Guy', cursive;
+  font-size: 1.5rem;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ff5ecb, #7b2cbf);
+  box-shadow: 0 6px 0 #4a1772, 0 10px 24px rgba(0,0,0,0.4);
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+  letter-spacing: 1px;
+  transition: transform .08s, box-shadow .08s;
+  animation: wiggle 2.5s ease-in-out infinite;
+}
+  .play-btn:active { transform: translateY(5px); box-shadow: 0 1px 0 #4a1772; }
+  @keyframes wiggle { 0%,100%{transform:rotate(-2deg) scale(1);} 50%{transform:rotate(2deg) scale(1.04);} }
+
   .message {
   font-size: 1.4rem;
   color: #fffc00; /* bright yellow */
@@ -130,6 +149,8 @@
       <div id="cake-animation"></div>
       <img src="mario-1.png" class="mario" alt="Mario Right" />
     </div>
+
+    <a href="game.html" class="play-btn">🌙 Play Evi's Moon Ball Game! 🎮</a>
 
     <div class="message">🔮 Come back later... some more birthday magic may be hiding!</div>
   </div>

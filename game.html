@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#1a0b3b" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<title>Evi's Moon Ball Adventure 🌙</title>
+<link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0; height: 100%; overflow: hidden;
+    background: #1a0b3b;
+    font-family: 'Baloo 2', system-ui, sans-serif;
+    touch-action: none; user-select: none; -webkit-user-select: none;
+  }
+  #game { display: block; width: 100vw; height: 100vh; }
+
+  .screen {
+    position: fixed; inset: 0; z-index: 10;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 24px;
+    background: radial-gradient(circle at 50% 30%, rgba(123,44,191,0.55), rgba(26,11,59,0.92));
+    color: #fff;
+  }
+  .hidden { display: none !important; }
+
+  h1 {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: clamp(2rem, 9vw, 4rem);
+    margin: 0 0 0.3em;
+    color: #fff36b;
+    text-shadow: 0 0 18px #ff5ecb, 3px 4px 0 #7b2cbf;
+    line-height: 1.1;
+  }
+  h2 {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: clamp(1.4rem, 6vw, 2.6rem);
+    margin: 0.2em 0; color: #8ef6ff;
+    text-shadow: 2px 2px 0 #5a1a8a;
+  }
+  p { font-size: clamp(1rem, 4.4vw, 1.3rem); max-width: 22em; line-height: 1.5; margin: 0.5em 0; }
+  .moon-emoji { font-size: clamp(3rem, 16vw, 6rem); animation: bob 2.2s ease-in-out infinite; }
+  @keyframes bob { 0%,100%{transform:translateY(0) rotate(-6deg);} 50%{transform:translateY(-14px) rotate(6deg);} }
+
+  .btn {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: clamp(1.2rem, 6vw, 1.8rem);
+    color: #fff; cursor: pointer; border: none;
+    padding: 0.6em 1.4em; margin-top: 0.6em; border-radius: 999px;
+    background: linear-gradient(135deg, #ff5ecb, #7b2cbf);
+    box-shadow: 0 6px 0 #4a1772, 0 10px 24px rgba(0,0,0,0.4);
+    transition: transform .08s, box-shadow .08s;
+    letter-spacing: 1px;
+  }
+  .btn:active { transform: translateY(5px); box-shadow: 0 1px 0 #4a1772, 0 4px 10px rgba(0,0,0,0.4); }
+  .btn.secondary { background: linear-gradient(135deg, #5ad1ff, #2c6fbf); box-shadow: 0 6px 0 #1a4a72, 0 10px 24px rgba(0,0,0,0.4); }
+  .btn.secondary:active { box-shadow: 0 1px 0 #1a4a72; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 16px; justify-content: center; max-width: 24em; margin: 0.4em 0 0.8em; }
+  .legend span { font-size: clamp(0.85rem, 3.6vw, 1.05rem); background: rgba(255,255,255,0.12); padding: 4px 12px; border-radius: 999px; }
+
+  /* HUD */
+  #hud {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 5;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: calc(env(safe-area-inset-top) + 10px) 16px 10px;
+    pointer-events: none;
+    font-family: 'Luckiest Guy', cursive;
+    color: #fff; text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+    font-size: clamp(1rem, 4.6vw, 1.4rem);
+  }
+  #hud .pill { background: rgba(26,11,59,0.45); padding: 6px 14px; border-radius: 999px; backdrop-filter: blur(4px); }
+  #hearts { color: #ff5ecb; }
+
+  #toast {
+    position: fixed; left: 50%; top: 22%; transform: translateX(-50%) scale(0.6);
+    z-index: 6; pointer-events: none; opacity: 0;
+    font-family: 'Luckiest Guy', cursive; color: #fff36b;
+    font-size: clamp(1.4rem, 7vw, 2.4rem); text-shadow: 0 0 16px #ff5ecb, 2px 2px 0 #7b2cbf;
+    transition: transform .25s cubic-bezier(.2,1.4,.4,1), opacity .25s; white-space: nowrap;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) scale(1); }
+
+  .tiny { font-size: clamp(0.8rem, 3.4vw, 1rem); opacity: 0.85; }
+  .mute-btn {
+    position: fixed; bottom: calc(env(safe-area-inset-bottom) + 12px); right: 14px; z-index: 7;
+    background: rgba(26,11,59,0.45); border: none; color: #fff; cursor: pointer;
+    width: 46px; height: 46px; border-radius: 50%; font-size: 1.4rem;
+  }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="hud" class="hidden">
+  <div class="pill">⭐ <span id="score">0</span></div>
+  <div class="pill">Level <span id="level">1</span></div>
+  <div class="pill" id="hearts">💖💖💖</div>
+</div>
+
+<div id="toast"></div>
+<button class="mute-btn hidden" id="muteBtn" aria-label="sound on/off">🔊</button>
+
+<!-- START SCREEN -->
+<div class="screen" id="startScreen">
+  <div class="moon-emoji">🌙</div>
+  <h1>Evi's Moon&nbsp;Ball Adventure</h1>
+  <p>Happy 7th Birthday, Evi! 🎉<br/>Swing your moon ball on a string and catch all the things you love!</p>
+  <div class="legend">
+    <span>📚 +1</span><span>🌻 +1</span><span>🎨 +1</span>
+    <span>✂️ +1</span><span>💝 share +3</span><span>😂 +2</span><span>🌟 bonus +5</span>
+  </div>
+  <p class="tiny">Move your finger (or mouse) to swing the moon ball.<br/>Catch good things — don't drop the 💝 hearts!</p>
+  <button class="btn" id="startBtn">▶ Play!</button>
+</div>
+
+<!-- BETWEEN-LEVEL / JOKE SCREEN -->
+<div class="screen hidden" id="jokeScreen">
+  <h2 id="jokeTitle">Level Up! 🚀</h2>
+  <p id="jokeText">😂</p>
+  <button class="btn secondary" id="nextBtn">Keep Going! ➜</button>
+</div>
+
+<!-- WIN SCREEN -->
+<div class="screen hidden" id="winScreen">
+  <div class="moon-emoji">🎂</div>
+  <h1>You did it, Evi!</h1>
+  <h2 id="winScore">⭐ 0 points</h2>
+  <p>You caught all the things that make you YOU — reading, plants, art, sharing, and being super funny. 💖<br/>You are 7 and amazing!</p>
+  <button class="btn" id="againBtn">Play Again 🔁</button>
+</div>
+
+<!-- GAME OVER SCREEN -->
+<div class="screen hidden" id="overScreen">
+  <div class="moon-emoji">🌙</div>
+  <h1>Oops!</h1>
+  <h2 id="overScore">⭐ 0 points</h2>
+  <p>The hearts need catching — Evi loves to share! 💝<br/>Want to try again?</p>
+  <button class="btn" id="retryBtn">Try Again 🔁</button>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  let W = 0, H = 0, DPR = 1;
+
+  function resize(){
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width = W * DPR; canvas.height = H * DPR;
+    canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // ---------- Elements ----------
+  const el = {
+    hud: document.getElementById('hud'),
+    score: document.getElementById('score'),
+    level: document.getElementById('level'),
+    hearts: document.getElementById('hearts'),
+    toast: document.getElementById('toast'),
+    muteBtn: document.getElementById('muteBtn'),
+    start: document.getElementById('startScreen'),
+    joke: document.getElementById('jokeScreen'),
+    jokeTitle: document.getElementById('jokeTitle'),
+    jokeText: document.getElementById('jokeText'),
+    win: document.getElementById('winScreen'),
+    winScore: document.getElementById('winScore'),
+    over: document.getElementById('overScreen'),
+    overScore: document.getElementById('overScore'),
+  };
+
+  // ---------- Game config ----------
+  const GOODIES = [
+    {e:'📚', pts:1}, {e:'🌻', pts:1}, {e:'🌱', pts:1}, {e:'🎨', pts:1},
+    {e:'✂️', pts:1}, {e:'🖍️', pts:1}, {e:'📖', pts:1}, {e:'🪴', pts:1}, {e:'😂', pts:2, label:'Hehe!'},
+  ];
+  const SHARE = {e:'💝', pts:3, label:'Sharing! +3'};   // must catch (heart) — dropping costs a life
+  const BONUS = {e:'🌟', pts:5, label:'BONUS! +5'};      // rare, big points
+  const ENCOURAGE = ['Yay!','Nice!','Wow!','Super!','Go Evi!','Brilliant!','Amazing!','Lovely!'];
+
+  const JOKES = [
+    ["Why did the book join the band? 📚","Because it had the best STORY... I mean stories! 🎶"],
+    ["What did the flower say to the bee? 🌻","\"You're un-bee-lievable!\" 🐝"],
+    ["Why did the crayon go to school? 🖍️","To get a little SHARPER! ✏️"],
+    ["What do you call a plant that tells jokes? 🪴","A funny-cactus! 🌵😂"],
+    ["Why was the moon so happy? 🌙","Because it was full... of giggles! ✨"],
+    ["How do you share a moon? 🌝","You take turns — that's the Evi way! 💖"],
+  ];
+
+  const LEVEL_GOALS = [12, 18, 26, 36, 50]; // cumulative score to clear each level
+  const MAX_LEVEL = LEVEL_GOALS.length;
+
+  // ---------- State ----------
+  let state = 'start'; // start, playing, joke, win, over
+  let score = 0, level = 1, lives = 3;
+  let items = [], particles = [], stars = [];
+  let lastTime = 0, spawnTimer = 0;
+  let ballX = 0, ballY = 0, targetX = 0, lastBallX = 0;
+  let anchorX = 0, anchorY = 0;
+  let muted = false;
+  let levelStartScore = 0;
+
+  // ---------- Audio (simple WebAudio blips) ----------
+  let actx = null;
+  function ensureAudio(){ if(!actx){ try{ actx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } }
+  function beep(freq, dur, type, vol){
+    if(muted || !actx) return;
+    try{
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.type = type || 'sine'; o.frequency.value = freq;
+      g.gain.value = vol || 0.08;
+      o.connect(g); g.connect(actx.destination);
+      const t = actx.currentTime;
+      g.gain.setValueAtTime(g.gain.value, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + (dur||0.15));
+      o.start(t); o.stop(t + (dur||0.15));
+    }catch(e){}
+  }
+  const sCatch = ()=>{ beep(660,0.12,'triangle',0.09); beep(990,0.10,'sine',0.05); };
+  const sShare = ()=>{ beep(523,0.1,'sine',0.08); setTimeout(()=>beep(784,0.14,'sine',0.08),90); };
+  const sBonus = ()=>{ [523,659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,0.14,'triangle',0.08),i*70)); };
+  const sMiss = ()=>{ beep(200,0.25,'sawtooth',0.06); };
+
+  // ---------- Stars background ----------
+  function initStars(){
+    stars = [];
+    const n = Math.round((W*H)/14000);
+    for(let i=0;i<n;i++){
+      stars.push({x:Math.random()*W, y:Math.random()*H, r:Math.random()*1.6+0.4, tw:Math.random()*Math.PI*2, sp:Math.random()*0.04+0.01});
+    }
+  }
+  initStars();
+  window.addEventListener('resize', initStars);
+
+  // ---------- Input ----------
+  function pointerMove(clientX){ targetX = Math.max(30, Math.min(W-30, clientX)); }
+  canvas.addEventListener('mousemove', e => pointerMove(e.clientX));
+  canvas.addEventListener('touchmove', e => { e.preventDefault(); if(e.touches[0]) pointerMove(e.touches[0].clientX); }, {passive:false});
+  canvas.addEventListener('touchstart', e => { if(e.touches[0]) pointerMove(e.touches[0].clientX); }, {passive:false});
+
+  el.muteBtn.addEventListener('click', ()=>{ muted = !muted; el.muteBtn.textContent = muted ? '🔇' : '🔊'; });
+
+  // ---------- Toast ----------
+  let toastTimer = null;
+  function toast(msg){
+    el.toast.textContent = msg;
+    el.toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=>el.toast.classList.remove('show'), 700);
+  }
+
+  // ---------- Screen helpers ----------
+  function show(node){ node.classList.remove('hidden'); }
+  function hide(node){ node.classList.add('hidden'); }
+
+  function updateHUD(){
+    el.score.textContent = score;
+    el.level.textContent = level;
+    el.hearts.textContent = '💖'.repeat(Math.max(0,lives)) + '🖤'.repeat(Math.max(0,3-lives));
+  }
+
+  // ---------- Game flow ----------
+  function startGame(){
+    ensureAudio();
+    score = 0; level = 1; lives = 3; items = []; particles = [];
+    levelStartScore = 0;
+    state = 'playing';
+    hide(el.start); hide(el.joke); hide(el.win); hide(el.over);
+    show(el.hud); el.muteBtn.classList.remove('hidden');
+    ballX = W/2; ballY = H*0.55; targetX = W/2; lastBallX = ballX;
+    updateHUD();
+    spawnTimer = 0; lastTime = performance.now();
+    toast("Go Evi! 🌙");
+  }
+
+  function clearLevel(){
+    state = 'joke';
+    items = [];
+    if(level >= MAX_LEVEL){ winGame(); return; }
+    const j = JOKES[(level-1) % JOKES.length];
+    el.jokeTitle.textContent = '🎉 Level ' + level + ' done! 🎉';
+    el.jokeText.innerHTML = j[0] + '<br/><br/>' + j[1];
+    show(el.joke);
+  }
+
+  function nextLevel(){
+    level++;
+    levelStartScore = score;
+    state = 'playing';
+    hide(el.joke);
+    items = []; spawnTimer = 0; lastTime = performance.now();
+    toast('Level ' + level + '! 🚀');
+  }
+
+  function winGame(){
+    state = 'win';
+    items = [];
+    el.winScore.textContent = '⭐ ' + score + ' points!';
+    show(el.win); hide(el.hud);
+    sBonus();
+    bigConfetti();
+  }
+
+  function gameOver(){
+    state = 'over';
+    items = [];
+    el.overScore.textContent = '⭐ ' + score + ' points';
+    show(el.over); hide(el.hud);
+    sMiss();
+  }
+
+  // ---------- Spawning ----------
+  function spawnItem(){
+    const speedBase = 90 + level*32;       // px/sec
+    const r = Math.random();
+    let def;
+    if(r < 0.10) def = SHARE;              // hearts: must catch
+    else if(r < 0.14) def = BONUS;         // rare star
+    else def = GOODIES[Math.floor(Math.random()*GOODIES.length)];
+    items.push({
+      x: 40 + Math.random()*(W-80),
+      y: -40,
+      vy: speedBase*(0.7+Math.random()*0.6),
+      vx: (Math.random()-0.5)*40,
+      e: def.e, pts: def.pts, label: def.label || null,
+      type: def===SHARE ? 'share' : (def===BONUS ? 'bonus' : 'good'),
+      sz: 34 + Math.random()*8, rot: (Math.random()-0.5)*0.4, spin:(Math.random()-0.5)*1.5,
+      sway: Math.random()*Math.PI*2
+    });
+  }
+
+  // ---------- Particles ----------
+  function burst(x,y,color,count){
+    for(let i=0;i<(count||10);i++){
+      const a = Math.random()*Math.PI*2, sp = Math.random()*180+40;
+      particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-60,life:1,color});
+    }
+  }
+  function bigConfetti(){
+    const colors = ['#ff5ecb','#fff36b','#8ef6ff','#7b2cbf','#5ad1ff','#ff9f43'];
+    for(let i=0;i<160;i++){
+      particles.push({x:Math.random()*W,y:-20-Math.random()*H*0.5,
+        vx:(Math.random()-0.5)*120, vy:Math.random()*120+60,
+        life:1, decay:0.004, color:colors[i%colors.length], confetti:true,
+        rot:Math.random()*Math.PI, spin:(Math.random()-0.5)*6, w:6+Math.random()*6});
+    }
+  }
+
+  // ---------- Update ----------
+  function update(dt){
+    // ball physics: smooth follow with a little swing
+    lastBallX = ballX;
+    ballX += (targetX - ballX) * Math.min(1, dt*9);
+    anchorX = W/2; anchorY = -20;
+    // ball y bobs slightly based on horizontal speed (string swing feel)
+    const vx = (ballX - lastBallX);
+    ballY = H*0.6 - Math.min(60, Math.abs(vx)*4);
+
+    // spawn
+    spawnTimer -= dt;
+    const interval = Math.max(0.45, 1.1 - level*0.12);
+    if(spawnTimer <= 0){ spawnItem(); spawnTimer = interval*(0.7+Math.random()*0.6); }
+
+    const ballR = 34;
+    for(let i=items.length-1;i>=0;i--){
+      const it = items[i];
+      it.sway += dt*3;
+      it.y += it.vy*dt;
+      it.x += (it.vx + Math.sin(it.sway)*20)*dt;
+      it.rot += it.spin*dt;
+      if(it.x < 24){ it.x = 24; it.vx = Math.abs(it.vx); }
+      if(it.x > W-24){ it.x = W-24; it.vx = -Math.abs(it.vx); }
+
+      // collision with ball
+      const dx = it.x - ballX, dy = it.y - ballY;
+      if(dx*dx + dy*dy < (ballR+it.sz*0.5)*(ballR+it.sz*0.5)){
+        // caught!
+        score += it.pts;
+        if(it.type==='share'){ toast(it.label); sShare(); burst(it.x,it.y,'#ff5ecb',16); }
+        else if(it.type==='bonus'){ toast(it.label); sBonus(); burst(it.x,it.y,'#fff36b',22); }
+        else { toast(it.label || ENCOURAGE[Math.floor(Math.random()*ENCOURAGE.length)]); sCatch(); burst(it.x,it.y,'#8ef6ff',10); }
+        items.splice(i,1);
+        updateHUD();
+        // level clear?
+        if(score >= LEVEL_GOALS[level-1]){ clearLevel(); return; }
+        continue;
+      }
+
+      // fell off bottom
+      if(it.y > H+40){
+        if(it.type==='share'){
+          lives--; updateHUD(); sMiss(); toast('Catch the 💝!');
+          burst(it.x, H-10, '#ff5ecb', 8);
+          if(lives <= 0){ gameOver(); return; }
+        }
+        items.splice(i,1);
+      }
+    }
+
+    // particles
+    for(let i=particles.length-1;i>=0;i--){
+      const p = particles[i];
+      p.x += p.vx*dt; p.y += p.vy*dt; p.vy += 420*dt;
+      p.life -= (p.decay||0.02);
+      if(p.spin) p.rot += p.spin*dt;
+      if(p.life <= 0 || p.y > H+30) particles.splice(i,1);
+    }
+
+    // stars twinkle
+    for(const s of stars){ s.tw += s.sp; }
+  }
+
+  // ---------- Draw ----------
+  function drawBackground(){
+    const g = ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,'#2a1259'); g.addColorStop(0.6,'#1a0b3b'); g.addColorStop(1,'#3b1a5a');
+    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+    // stars
+    for(const s of stars){
+      const a = 0.4 + Math.abs(Math.sin(s.tw))*0.6;
+      ctx.globalAlpha = a; ctx.fillStyle = '#fff7d6';
+      ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    // big soft moon top-right
+    const mx = W*0.82, my = H*0.14, mr = Math.min(W,H)*0.12;
+    const mg = ctx.createRadialGradient(mx-mr*0.3,my-mr*0.3,mr*0.2,mx,my,mr);
+    mg.addColorStop(0,'#fffbe6'); mg.addColorStop(1,'#d9c7ff');
+    ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(mx,my,mr,0,Math.PI*2); ctx.fill();
+  }
+
+  function drawBall(){
+    // string from anchor (top center) to ball
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(anchorX, 0);
+    ctx.quadraticCurveTo((anchorX+ballX)/2, ballY*0.4, ballX, ballY-30);
+    ctx.stroke();
+
+    // glow
+    const r = 30;
+    const gg = ctx.createRadialGradient(ballX, ballY, 4, ballX, ballY, r*1.8);
+    gg.addColorStop(0,'rgba(180,230,255,0.5)'); gg.addColorStop(1,'rgba(180,230,255,0)');
+    ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(ballX,ballY,r*1.8,0,Math.PI*2); ctx.fill();
+
+    // moon ball body
+    const bg = ctx.createRadialGradient(ballX-10, ballY-10, 4, ballX, ballY, r);
+    bg.addColorStop(0,'#ffffff'); bg.addColorStop(0.6,'#dfe9ff'); bg.addColorStop(1,'#a7b8e8');
+    ctx.fillStyle = bg; ctx.beginPath(); ctx.arc(ballX,ballY,r,0,Math.PI*2); ctx.fill();
+    // craters
+    ctx.fillStyle = 'rgba(150,160,200,0.5)';
+    ctx.beginPath(); ctx.arc(ballX-8,ballY+6,5,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(ballX+10,ballY-4,3.5,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(ballX+4,ballY+12,2.6,0,Math.PI*2); ctx.fill();
+  }
+
+  function drawItems(){
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for(const it of items){
+      ctx.save();
+      ctx.translate(it.x, it.y); ctx.rotate(it.rot);
+      ctx.font = it.sz + 'px serif';
+      ctx.fillText(it.e, 0, 0);
+      ctx.restore();
+    }
+  }
+
+  function drawParticles(){
+    for(const p of particles){
+      ctx.globalAlpha = Math.max(0,p.life);
+      if(p.confetti){
+        ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot||0);
+        ctx.fillStyle = p.color; ctx.fillRect(-p.w/2,-p.w/4,p.w,p.w/2);
+        ctx.restore();
+      } else {
+        ctx.fillStyle = p.color;
+        ctx.beginPath(); ctx.arc(p.x,p.y,3,0,Math.PI*2); ctx.fill();
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function render(){
+    drawBackground();
+    drawItems();
+    if(state==='playing') drawBall();
+    drawParticles();
+  }
+
+  // ---------- Loop ----------
+  function loop(now){
+    let dt = (now - lastTime)/1000; lastTime = now;
+    if(dt > 0.05) dt = 0.05;
+    if(state==='playing') update(dt);
+    else {
+      // keep particles & stars animating on win screen
+      for(let i=particles.length-1;i>=0;i--){
+        const p = particles[i];
+        p.x += p.vx*dt; p.y += p.vy*dt; p.vy += 420*dt;
+        p.life -= (p.decay||0.02); if(p.spin) p.rot += p.spin*dt;
+        if(p.life<=0 || p.y>H+30) particles.splice(i,1);
+      }
+      for(const s of stars){ s.tw += s.sp; }
+    }
+    render();
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  // ---------- Buttons ----------
+  document.getElementById('startBtn').addEventListener('click', startGame);
+  document.getElementById('nextBtn').addEventListener('click', nextLevel);
+  document.getElementById('againBtn').addEventListener('click', startGame);
+  document.getElementById('retryBtn').addEventListener('click', startGame);
+
+  // Prevent iOS double-tap zoom on buttons
+  document.querySelectorAll('.btn,.mute-btn').forEach(b=>{
+    b.addEventListener('touchend', e=>{ e.preventDefault(); b.click(); }, {passive:false});
+  });
+})();
+</script>
+</body>
+</html>
