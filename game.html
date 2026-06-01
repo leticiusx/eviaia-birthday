@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#1b2a4a" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <title>Super Evi World 🌙</title>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Luckiest+Guy&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Luckiest+Guy&family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#1b2a4a;
@@ -70,6 +70,8 @@ const SFX={
   paint:()=>noise(0.06,0.03,600+Math.random()*600),
   win:()=>[523,659,784,1046,1319].forEach((f,i)=>tone(f,0.2,'triangle',0.07,i*0.08)),
   back:()=>tone(440,0.08,'sine',0.05),
+  hover:()=>{tone(740,0.05,'square',0.05);tone(1100,0.04,'square',0.03,0.03);},
+  select:()=>{[660,990,1320].forEach((f,i)=>tone(f,0.09,'square',0.06,i*0.05));},
 };
 
 // ---------- pointer ----------
@@ -229,74 +231,119 @@ function drawBackBtn(){const x=32,y=34,r=22;
    MENU — Mario-Kart-style world select with depth
    ===================================================================== */
 const Menu={
-  t:0,cards:[],clouds:[],pf:null,confetti:[],
+  t:0,grid:0,cards:[],pf:null,confetti:[],focus:-1,
   worlds:[
-    {key:'garden',title:'Bloom Valley',c:'#3fa83f',c2:'#1f6b22'},
-    {key:'arts',  title:'Rainbow Studio',c:'#ff7ab8',c2:'#c5468a'},
-    {key:'story', title:'Storybook Wood',c:'#f0a83a',c2:'#b8701c'},
-    {key:'moon',  title:'Moonlit Cosmos',c:'#6a74d8',c2:'#3a3f8c'},
+    {key:'garden',title:'BLOOM VALLEY',  top:'#54d24a',side:'#1f6b22',neon:'#7dff5a'},
+    {key:'arts',  title:'RAINBOW STUDIO',top:'#ff7ab8',side:'#a8246e',neon:'#ff5ecb'},
+    {key:'story', title:'STORYBOOK WOOD',top:'#ffb24d',side:'#a8620c',neon:'#ffd23f'},
+    {key:'moon',  title:'MOONLIT COSMOS',top:'#7a86ff',side:'#2e3380',neon:'#8ef6ff'},
   ],
   layout(){
-    const gw=Math.min(W*0.9,400), tile=Math.min((gw-20)/2,(H*0.46)/2);
-    const gx=W/2-(tile*2+20)/2, gy=H*0.33;
+    const gw=Math.min(W*0.92,420), tile=Math.min((gw-26)/2,(H*0.4)/2);
+    const gx=W/2-(tile*2+26)/2, gy=H*0.37;
     this.cards=this.worlds.map((w,i)=>{const cx=i%2,cy=(i/2)|0;
-      return {...w,x:gx+cx*(tile+20),y:gy+cy*(tile+50),w:tile,h:tile};});
+      return {...w,x:gx+cx*(tile+26),y:gy+cy*(tile+54),w:tile,h:tile,scale:w&&this.cards&&this.cards[i]?this.cards[i].scale:1};});
   },
-  enter(){this.clouds=Array.from({length:4},()=>({x:rand(0,W),y:rand(30,H*0.22),s:rand(0.5,1),sp:rand(4,9)}));
-    this.pf=new ParticleField(26,{rMax:2.5,drift:6,rise:10});hint('Tap a world to play! 🌟',3000);},
-  update(dt){this.t+=dt;this.pf.update(dt);for(const c of this.clouds){c.x-=c.sp*dt;if(c.x<-130)c.x=W+90;}
+  enter(){this.pf=new ParticleField(40,{rMax:2,drift:4,rise:6});this.focus=-1;hint('Pick a world! 🕹️',3200);},
+  hitCard(x,y){for(let i=0;i<this.cards.length;i++){const c=this.cards[i];if(x>c.x&&x<c.x+c.w&&y>c.y&&y<c.y+c.h+40)return i;}return -1;},
+  update(dt){this.t+=dt;this.grid+=dt*0.55;this.pf.update(dt);
+    for(let i=0;i<this.cards.length;i++){const c=this.cards[i];const tgt=(i===this.focus)?1.12:1;c.scale=lerp(c.scale||1,tgt,Math.min(1,dt*12));}
     if(allDone()){if(this.confetti.length<150&&Math.random()<0.5){const cols=['#ff5b7a','#ffd23f','#54b8ff','#5ed24f','#ff7ab8'];
       this.confetti.push({x:rand(0,W),y:-10,vx:rand(-30,30),vy:rand(60,150),rot:rand(0,7),vr:rand(-5,5),c:cols[(Math.random()*cols.length)|0],w:rand(6,12)});}
       for(const p of this.confetti){p.x+=p.vx*dt;p.y+=p.vy*dt;p.rot+=p.vr*dt;}this.confetti=this.confetti.filter(p=>p.y<H+20);}},
   draw(){
-    // sunset sky with depth
-    ctx.fillStyle=vGrad(0,H,[[0,'#2b3f7a'],[0.35,'#5a6fc0'],[0.6,'#ff9e7a'],[0.78,'#ffd29e']]);ctx.fillRect(0,0,W,H);
-    const sx=W/2,sy=H*0.5;sunDisc(sx,sy,46,'#fff3c4','#ffcaa0');godRays(sx,sy,'rgba(255,220,170,0.05)');
-    for(const c of this.clouds)cloud(c.x,c.y,c.s,'rgba(255,255,255,0.85)');
-    // layered hazy mountains
-    ridges(H*0.62,[
-      {h:90,color:'rgba(120,110,180,0.55)',wl:200,amp:34,off:40},
-      {h:55,color:'rgba(90,120,150,0.6)',wl:150,amp:26,off:200},
-    ]);
-    // perspective grass ground
-    perspGround(H*0.62,{fill:[[0,'#4f9e3e'],[1,'#2f6f24']],line:'rgba(255,255,255,0.16)',cols:18,rows:14,scroll:this.t*0.25,spread:2.6,vanishX:W/2});
-    this.pf.draw('rgba(255,245,200,0.9)');
-    // title banner
-    ctx.textAlign='center';const bob=Math.sin(this.t*2)*4;
-    ctx.font=`${Math.min(W*0.12,54)}px 'Luckiest Guy',cursive`;ctx.lineWidth=8;ctx.strokeStyle='#7a2200';ctx.fillStyle='#ffd23f';ctx.lineJoin='round';
-    ctx.strokeText('Super Evi World',W/2,H*0.15+bob);ctx.fillText('Super Evi World',W/2,H*0.15+bob);
-    ctx.font=`600 ${Math.min(W*0.05,22)}px 'Fredoka'`;ctx.fillStyle='#fff';ctx.strokeStyle='rgba(0,0,0,0.25)';ctx.lineWidth=4;
-    const sub=allDone()?'🎂 Happy 7th Birthday, Evi! 🎂':'Happy 7th Birthday, Evi!';
-    ctx.strokeText(sub,W/2,H*0.15+bob+32);ctx.fillText(sub,W/2,H*0.15+bob+32);
-    // world tiles
-    for(const c of this.cards){
-      softShadow(c.x+c.w/2,c.y+c.h+8,c.w*0.46,12);
-      ctx.save();rr(c.x,c.y,c.w,c.h,20);ctx.clip();this.preview(c.key,c.x,c.y,c.w,c.h);ctx.restore();
-      ctx.strokeStyle='#fff';ctx.lineWidth=4;rr(c.x,c.y,c.w,c.h,20);ctx.stroke();
-      ctx.strokeStyle='rgba(0,0,0,0.25)';ctx.lineWidth=2;rr(c.x-1,c.y-1,c.w+2,c.h+2,21);ctx.stroke();
-      // label ribbon
-      ctx.fillStyle=c.c2;rr(c.x+c.w*0.06,c.y+c.h+6,c.w*0.88,30,15);ctx.fill();
-      ctx.fillStyle='#fff';ctx.font=`700 ${Math.min(c.w*0.13,18)}px 'Fredoka'`;ctx.textAlign='center';
-      ctx.fillText(c.title,c.x+c.w/2,c.y+c.h+27);
-      if(progress[c.key]){ctx.font=`${c.w*0.2}px serif`;ctx.fillText('⭐',c.x+c.w-16,c.y+22);}
-    }
+    const horizon=H*0.42;
+    // synthwave sky
+    ctx.fillStyle=vGrad(0,horizon,[[0,'#160a33'],[0.55,'#5a1d7a'],[1,'#ff5e8a']]);ctx.fillRect(0,0,W,horizon);
+    // starfield
+    for(let i=0;i<46;i++){const sx=(i*97.3)%W,sy=(i*53.7)%horizon;ctx.globalAlpha=0.3+Math.abs(Math.sin(this.t*1.5+i))*0.5;ctx.fillStyle='#fff';ctx.fillRect(sx,sy,1.6,1.6);}ctx.globalAlpha=1;
+    // retro sun with scanline gaps
+    const sx=W/2,sy=horizon-6,sr=Math.min(W*0.34,150);
+    ctx.save();ctx.beginPath();ctx.arc(sx,sy,sr,Math.PI,TAU);ctx.clip();
+    ctx.fillStyle=vGrad(sy-sr,sy,[[0,'#fff36b'],[0.5,'#ff9e3d'],[1,'#ff3b8a']]);ctx.fillRect(sx-sr,sy-sr,sr*2,sr);
+    ctx.fillStyle='#160a33';for(let i=0;i<7;i++){const yy=sy-sr*0.5+i*(sr*0.08);ctx.fillRect(sx-sr,yy+i*2.4,sr*2,sr*0.05+i*0.8);}ctx.restore();
+    // Mode-7 neon grid floor
+    this.modeSeven(horizon);
+    this.pf.draw('rgba(180,240,255,0.85)');
+    // TITLE (Press Start 2P, heavy outline + neon glow)
+    ctx.textAlign='center';ctx.textBaseline='alphabetic';
+    const ts=Math.min(W*0.072,30);ctx.font=`${ts}px 'Press Start 2P',monospace`;ctx.lineJoin='round';
+    const ty=H*0.13;
+    ctx.save();ctx.shadowColor='#ff2fd0';ctx.shadowBlur=22;
+    ctx.lineWidth=ts*0.5;ctx.strokeStyle='#000';ctx.strokeText('SUPER EVI',W/2,ty);ctx.strokeText('WORLD',W/2,ty+ts*1.5);
+    ctx.fillStyle='#fff36b';ctx.fillText('SUPER EVI',W/2,ty);ctx.fillStyle='#5ef0ff';ctx.fillText('WORLD',W/2,ty+ts*1.5);
+    ctx.restore();
+    ctx.font=`${Math.min(W*0.03,11)}px 'Press Start 2P',monospace`;ctx.fillStyle='#fff';ctx.lineWidth=4;ctx.strokeStyle='#000';
+    const sub=allDone()?'HAPPY 7TH BIRTHDAY EVI!':'EVI IS 7! - PLAYER 1';
+    ctx.strokeText(sub,W/2,ty+ts*2.9);ctx.fillText(sub,W/2,ty+ts*2.9);
+    // cards (back to front so scaled ones overlap nicely)
+    for(const c of this.cards)this.drawCard(c);
+    // blinking footer
+    if(Math.floor(this.t*1.6)%2===0){ctx.font=`${Math.min(W*0.03,11)}px 'Press Start 2P',monospace`;ctx.fillStyle='#fff36b';ctx.strokeStyle='#000';ctx.lineWidth=4;
+      const f='▶ TAP A WORLD ◀';ctx.strokeText(f,W/2,H-26);ctx.fillText(f,W/2,H-26);}
     for(const p of this.confetti){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);ctx.fillStyle=p.c;ctx.fillRect(-p.w/2,-p.w/4,p.w,p.w/2);ctx.restore();}
+  },
+  modeSeven(horizon){
+    ctx.fillStyle=vGrad(horizon,H,[[0,'#1a0b3b'],[1,'#3a0d4a']]);ctx.fillRect(0,horizon,W,H-horizon);
+    ctx.save();ctx.beginPath();ctx.rect(0,horizon,W,H-horizon);ctx.clip();
+    const vx=W/2;
+    // horizon glow
+    const hg=ctx.createLinearGradient(0,horizon,0,horizon+60);hg.addColorStop(0,'rgba(255,90,200,0.5)');hg.addColorStop(1,'rgba(255,90,200,0)');ctx.fillStyle=hg;ctx.fillRect(0,horizon,W,60);
+    ctx.shadowColor='#27f0ff';ctx.shadowBlur=8;
+    // converging rails
+    ctx.strokeStyle='rgba(120,240,255,0.55)';ctx.lineWidth=2;const cols=14;
+    for(let i=-cols;i<=cols;i++){ctx.beginPath();ctx.moveTo(vx,horizon);ctx.lineTo(vx+i*(W*2.8/cols),H);ctx.stroke();}
+    // scrolling horizontal lines (motion toward viewer)
+    ctx.strokeStyle='rgba(255,90,200,0.7)';const rows=16,scr=this.grid%1;
+    for(let i=0;i<=rows;i++){const t=(i+scr)/rows,y=horizon+(H-horizon)*(t*t);if(y<=horizon+0.5)continue;
+      ctx.lineWidth=0.6+t*2.4;ctx.globalAlpha=clamp(t*1.3,0,1);ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+    ctx.globalAlpha=1;ctx.restore();
+  },
+  drawCard(c){
+    const cx=c.x+c.w/2,cy=c.y+c.h/2,s=c.scale||1,foc=(this.cards[this.focus]===c);
+    ctx.save();ctx.translate(cx,cy);ctx.scale(s,s);ctx.translate(-cx,-cy);
+    const depth=Math.max(8,c.w*0.08),r=16;
+    // glow pop
+    if(foc){ctx.save();ctx.shadowColor=c.neon;ctx.shadowBlur=34;ctx.fillStyle=c.neon;rr(c.x,c.y,c.w,c.h,r);ctx.fill();ctx.restore();}
+    else softShadow(cx,c.y+c.h+depth+6,c.w*0.46,10);
+    // extruded side (3D base)
+    ctx.fillStyle=c.side;rr(c.x,c.y+depth,c.w,c.h,r);ctx.fill();
+    // top face with preview
+    ctx.save();rr(c.x,c.y,c.w,c.h,r);ctx.clip();
+    this.preview(c.key,c.x,c.y,c.w,c.h);
+    // glossy sheen
+    ctx.fillStyle='rgba(255,255,255,0.18)';ctx.beginPath();ctx.moveTo(c.x,c.y);ctx.lineTo(c.x+c.w,c.y);ctx.lineTo(c.x+c.w,c.y+c.h*0.32);ctx.lineTo(c.x,c.y+c.h*0.5);ctx.closePath();ctx.fill();
+    ctx.restore();
+    // chunky outline
+    ctx.lineJoin='round';ctx.strokeStyle='#0c0820';ctx.lineWidth=5;rr(c.x,c.y,c.w,c.h,r);ctx.stroke();
+    ctx.strokeStyle=foc?c.neon:'rgba(255,255,255,0.8)';ctx.lineWidth=2.5;rr(c.x+2.5,c.y+2.5,c.w-5,c.h-5,r-2);ctx.stroke();
+    // neon label plate
+    const lh=Math.max(22,c.w*0.2),lw=c.w*0.96,lx=cx-lw/2,ly=c.y+c.h+depth-2;
+    ctx.fillStyle='#0c0820';rr(lx,ly,lw,lh,8);ctx.fill();
+    ctx.strokeStyle=c.neon;ctx.lineWidth=2;rr(lx,ly,lw,lh,8);ctx.stroke();
+    ctx.fillStyle=foc?'#fff':c.neon;ctx.font=`${Math.min(c.w*0.092,11)}px 'Press Start 2P',monospace`;ctx.textAlign='center';ctx.textBaseline='middle';
+    if(foc){ctx.shadowColor=c.neon;ctx.shadowBlur=12;}ctx.fillText(c.title,cx,ly+lh/2+1);ctx.shadowBlur=0;ctx.textBaseline='alphabetic';
+    if(progress[c.key]){ctx.font=`${c.w*0.2}px serif`;ctx.fillText('⭐',c.x+c.w-14,c.y+24);}
+    ctx.restore();
   },
   preview(key,x,y,w,h){
     if(key==='garden'){ctx.fillStyle=vGrad(y,y+h,[[0,'#bdfcff'],[0.55,'#9be88a'],[1,'#3f9e3a']]);ctx.fillRect(x,y,w,h);
-      drawFlower(x+w*0.3,y+h*0.92,1,FLOWERS[0],this.t,true);drawFlower(x+w*0.7,y+h*0.92,1,FLOWERS[2],this.t+1,true);}
-    else if(key==='arts'){ctx.fillStyle=vGrad(y,y+h,[[0,'#fff0f8'],[1,'#ffc6e6']]);ctx.fillRect(x,y,w,h);
-      const cols=['#ff5b7a','#ffd23f','#54b8ff','#5ed24f','#9b5bff'];for(let i=0;i<5;i++){ctx.fillStyle=cols[i];ctx.beginPath();ctx.arc(x+w*(0.2+i*0.15),y+h*(0.5+Math.sin(this.t*2+i)*0.18),w*0.09,0,TAU);ctx.fill();}}
-    else if(key==='story'){ctx.fillStyle=vGrad(y,y+h,[[0,'#ffe7b8'],[1,'#e0a86a']]);ctx.fillRect(x,y,w,h);Menu.book(x+w/2,y+h*0.55,w*0.3);}
-    else {ctx.fillStyle=vGrad(y,y+h,[[0,'#3a2a72'],[1,'#1a1438']]);ctx.fillRect(x,y,w,h);
-      for(let i=0;i<12;i++){ctx.fillStyle='#fff';ctx.globalAlpha=0.4+Math.sin(this.t*2+i)*0.3;ctx.beginPath();ctx.arc(x+((i*53)%w),y+((i*37)%h),1.4,0,TAU);ctx.fill();}ctx.globalAlpha=1;
-      const mx=x+w*0.7,my=y+h*0.32,mr=w*0.16;ctx.fillStyle='#fffbe6';ctx.beginPath();ctx.arc(mx,my,mr,0,TAU);ctx.fill();
-      drawLuni(x+w*0.4,y+h*0.62,w*0.16);}
+      drawFlower(x+w*0.3,y+h*0.95,1,FLOWERS[0],this.t,true);drawFlower(x+w*0.7,y+h*0.95,1,FLOWERS[2],this.t+1,true);}
+    else if(key==='arts'){ctx.fillStyle=vGrad(y,y+h,[[0,'#3a1030'],[1,'#7a1d5a']]);ctx.fillRect(x,y,w,h);
+      const cols=['#ff5b7a','#ffd23f','#54b8ff','#5ed24f','#9b5bff'];for(let i=0;i<5;i++){ctx.save();ctx.shadowColor=cols[i];ctx.shadowBlur=10;ctx.fillStyle=cols[i];ctx.beginPath();ctx.arc(x+w*(0.2+i*0.15),y+h*(0.5+Math.sin(this.t*2+i)*0.2),w*0.09,0,TAU);ctx.fill();ctx.restore();}}
+    else if(key==='story'){ctx.fillStyle=vGrad(y,y+h,[[0,'#ffe7b8'],[1,'#c98a3a']]);ctx.fillRect(x,y,w,h);Menu.book(x+w/2,y+h*0.52,w*0.3);}
+    else {ctx.fillStyle=vGrad(y,y+h,[[0,'#1a1240'],[1,'#3a1a4a']]);ctx.fillRect(x,y,w,h);
+      for(let i=0;i<14;i++){ctx.fillStyle='#fff';ctx.globalAlpha=0.4+Math.sin(this.t*2+i)*0.3;ctx.beginPath();ctx.arc(x+((i*53)%w),y+((i*37)%h),1.4,0,TAU);ctx.fill();}ctx.globalAlpha=1;
+      const a=this.t,mx=x+w*0.5+Math.cos(a)*w*0.22,my=y+h*0.5+Math.sin(a)*h*0.18;
+      ctx.save();ctx.shadowColor='#fffbe6';ctx.shadowBlur=12;ctx.fillStyle='#fffbe6';ctx.beginPath();ctx.arc(x+w*0.5,y+h*0.32,w*0.13,0,TAU);ctx.fill();ctx.restore();
+      drawLuni(mx,my,w*0.14);}
   },
   book(x,y,r){ctx.save();ctx.translate(x,y);ctx.fillStyle='#fff';ctx.strokeStyle='#c97b2c';ctx.lineWidth=2.5;
     ctx.beginPath();ctx.moveTo(0,-r*0.5);ctx.quadraticCurveTo(-r*0.9,-r*0.7,-r*0.95,-r*0.2);ctx.lineTo(-r*0.95,r*0.55);ctx.quadraticCurveTo(-r*0.9,r*0.2,0,r*0.4);ctx.closePath();ctx.fill();ctx.stroke();
     ctx.beginPath();ctx.moveTo(0,-r*0.5);ctx.quadraticCurveTo(r*0.9,-r*0.7,r*0.95,-r*0.2);ctx.lineTo(r*0.95,r*0.55);ctx.quadraticCurveTo(r*0.9,r*0.2,0,r*0.4);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();},
-  onUp(x,y,tap){if(!tap)return;for(const c of this.cards)if(x>c.x&&x<c.x+c.w&&y>c.y&&y<c.y+c.h+36){setScene(c.key);return;}}
+  onMove(x,y){const h=this.hitCard(x,y);if(h!==this.focus){this.focus=h;if(h>=0)SFX.hover();}},
+  onDown(x,y){const h=this.hitCard(x,y);if(h!==this.focus){this.focus=h;if(h>=0)SFX.hover();}},
+  onUp(x,y,tap){const h=this.hitCard(x,y);if(h>=0){this.focus=h;SFX.select();setScene(this.cards[h].key);}}
 };
 
 /* =====================================================================
